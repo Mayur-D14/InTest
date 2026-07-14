@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background-color: #8B7CF6;
+  color: #0B0D12;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #242938 #0B0D12;
+}
