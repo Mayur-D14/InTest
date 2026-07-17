@@ -1,0 +1,55 @@
+name: SDET Tests
+
+# Covers every trigger type the platform can observe:
+# push, pull_request, a nightly schedule, and manual dispatch from the Actions tab.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"   # 3am UTC nightly regression
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Selenium Grid as a service container, same role selenium-hub/chrome-node play locally
+    services:
+      selenium:
+        image: selenium/standalone-chrome:4.25.0
+        ports:
+          - 4444:4444
+        options: --shm-size=2gb
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pytest selenium
+
+      - name: Copy platform reporting files alongside tests
+        # These two files come from this repo's runner/templates/ directory.
+        # Copy them into your test repo (e.g. into tests/) so pytest can find them.
+        run: |
+          cp conftest.py tests/conftest.py || echo "conftest.py already in place"
+          cp sdet_selenium.py tests/sdet_selenium.py || echo "sdet_selenium.py already in place"
+
+      - name: Run tests
+        env:
+          SELENIUM_REMOTE_URL: http://localhost:4444/wd/hub
+          SDET_RESULTS_PATH: ${{ github.workspace }}/results.json
+        run: pytest tests/ -v
+        continue-on-error: true   # we still want to upload results even if some tests failed
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdet-results          # must match this exact name — the platform looks for it
+          path: results.json
+          retention-days: 14

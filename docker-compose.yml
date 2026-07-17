@@ -1,0 +1,128 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sdet_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sdet
+      POSTGRES_PASSWORD: sdet_local_pw
+      POSTGRES_DB: sdet_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sdet -d sdet_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sdet_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  selenium-hub:
+    image: selenium/hub:4.25.0
+    container_name: sdet_selenium_hub
+    restart: unless-stopped
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+
+  # No fixed container_name below — scaling with `--scale` requires letting
+  # Compose generate unique names per replica.
+  chrome-node:
+    image: selenium/node-chrome:4.25.0
+    restart: unless-stopped
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    environment:
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: 4442
+      SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
+      SE_NODE_MAX_SESSIONS: 1
+
+  runner:
+    build: ./runner
+    restart: unless-stopped
+    environment:
+      SELENIUM_REMOTE_URL: http://selenium-hub:4444/wd/hub
+    depends_on:
+      - selenium-hub
+    volumes:
+      - scripts_data:/data/scripts
+      - ./runner/app.py:/app/app.py
+      - ./runner/templates:/app/templates
+
+  backend:
+    build: ./backend
+    container_name: sdet_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://sdet:sdet_local_pw@postgres:5432/sdet_platform
+      SEED_ON_START: "true"
+      RUNNER_URL: http://runner:9000
+      ATTACHMENTS_DIR: /data/attachments
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      runner:
+        condition: service_started
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend/app:/app/app
+      - scripts_data:/data/scripts
+      - attachments_data:/data/attachments
+
+  # Celery worker: picks up queued runs and executes them. Scale this alongside
+  # `runner` and `chrome-node` for real concurrent execution — see README.
+  worker:
+    build: ./backend
+    container_name: sdet_worker
+    restart: unless-stopped
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      DATABASE_URL: postgresql+psycopg2://sdet:sdet_local_pw@postgres:5432/sdet_platform
+      RUNNER_URL: http://runner:9000
+      ATTACHMENTS_DIR: /data/attachments
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      runner:
+        condition: service_started
+    volumes:
+      - ./backend/app:/app/app
+      - scripts_data:/data/scripts
+
+  frontend:
+    build: ./frontend
+    container_name: sdet_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+
+volumes:
+  pgdata:
+  scripts_data:
+  attachments_data:
