@@ -11,6 +11,15 @@ export interface TestCaseFormValue {
   change_summary: string;
   changed_by: string;
   steps: TestCaseStep[];
+<<<<<<< HEAD
+=======
+  description: string;
+  test_scripts: string;
+  test_data: string;
+  expected_result: string;
+  actual_result: string;
+  linked_script_name?: string | null;
+>>>>>>> spreadsheet_add_data
 }
 
 const defaultValue: TestCaseFormValue = {
@@ -23,6 +32,15 @@ const defaultValue: TestCaseFormValue = {
   change_summary: "Initial version",
   changed_by: "solo-sdet",
   steps: [{ step_number: 1, action: "", expected_result: "" }],
+<<<<<<< HEAD
+=======
+  description: "",
+  test_scripts: "",
+  test_data: "",
+  expected_result: "",
+  actual_result: "",
+  linked_script_name: null,
+>>>>>>> spreadsheet_add_data
 };
 
 export default function TestCaseForm({
@@ -90,6 +108,14 @@ export default function TestCaseForm({
         <textarea value={value.preconditions} onChange={(e) => set("preconditions", e.target.value)} rows={2} className={inputClass} placeholder="What must be true before this test runs?" />
       </div>
 
+<<<<<<< HEAD
+=======
+      <div>
+        <label className={labelClass}>Description</label>
+        <textarea value={value.description} onChange={(e) => set("description", e.target.value)} rows={2} className={inputClass} placeholder="Short summary of what this test covers" />
+      </div>
+
+>>>>>>> spreadsheet_add_data
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className={labelClass}>Priority</label>
@@ -167,6 +193,38 @@ export default function TestCaseForm({
         </div>
       </div>
 
+<<<<<<< HEAD
+=======
+      <div className="border-t border-border pt-4">
+        <div className="text-xs font-mono text-muted mb-3">Spreadsheet-style fields (matches Excel import format)</div>
+
+        <div className="space-y-3">
+          <div>
+            <label className={labelClass}>Test Scripts</label>
+            <textarea value={value.test_scripts} onChange={(e) => set("test_scripts", e.target.value)} rows={3} className={inputClass} placeholder="Free text steps, e.g. 1. Go to login  2. Enter creds  3. Click Sign In" />
+          </div>
+          <div>
+            <label className={labelClass}>Link an automation script (optional)</label>
+            <input value={value.linked_script_name || ""} onChange={(e) => set("linked_script_name", e.target.value || null)} className={inputClass} placeholder="Exact script name — leave blank if none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Test Data</label>
+              <textarea value={value.test_data} onChange={(e) => set("test_data", e.target.value)} rows={2} className={inputClass} placeholder="Inputs used for this test" />
+            </div>
+            <div>
+              <label className={labelClass}>Expected Result</label>
+              <textarea value={value.expected_result} onChange={(e) => set("expected_result", e.target.value)} rows={2} className={inputClass} placeholder="Overall expected outcome" />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Actual Result</label>
+            <textarea value={value.actual_result} onChange={(e) => set("actual_result", e.target.value)} rows={2} className={inputClass} placeholder="Filled in after execution" />
+          </div>
+        </div>
+      </div>
+
+>>>>>>> spreadsheet_add_data
       <div>
         <label className={labelClass}>Change summary (for version history)</label>
         <input value={value.change_summary} onChange={(e) => set("change_summary", e.target.value)} className={inputClass} placeholder="What changed and why?" />

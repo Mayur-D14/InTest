@@ -69,6 +69,14 @@ def _build_version(db: Session, test_case_id: str, version_number: int, v: schem
         tags=v.tags,
         changed_by=v.changed_by,
         change_summary=v.change_summary,
+<<<<<<< HEAD
+=======
+        description=v.description,
+        test_scripts=v.test_scripts,
+        test_data=v.test_data,
+        expected_result=v.expected_result,
+        actual_result=v.actual_result,
+>>>>>>> spreadsheet_add_data
     )
     db.add(version)
     db.flush()  # get version.id without committing
@@ -82,6 +90,20 @@ def _build_version(db: Session, test_case_id: str, version_number: int, v: schem
     return version
 
 
+<<<<<<< HEAD
+=======
+def _link_script_by_name(db: Session, test_case: models.TestCase, script_name: str = None):
+    """Best-effort: if a script with this exact name exists, add this test case to its
+    linked test cases (reuses the existing many-to-many from Phase 2 rather than a new column)."""
+    if not script_name:
+        return None
+    script = db.query(models.AutomationScript).filter(models.AutomationScript.name == script_name).first()
+    if script and test_case not in script.test_cases:
+        script.test_cases.append(test_case)
+    return script
+
+
+>>>>>>> spreadsheet_add_data
 def create_test_case(db: Session, data: schemas.TestCaseCreate) -> models.TestCase:
     test_case = models.TestCase(test_suite_id=data.test_suite_id)
     db.add(test_case)
@@ -91,11 +113,40 @@ def create_test_case(db: Session, data: schemas.TestCaseCreate) -> models.TestCa
     db.flush()
 
     test_case.current_version_id = version.id
+<<<<<<< HEAD
+=======
+    _link_script_by_name(db, test_case, data.version.linked_script_name)
+>>>>>>> spreadsheet_add_data
     db.commit()
     db.refresh(test_case)
     return test_case
 
 
+<<<<<<< HEAD
+=======
+def bulk_create_test_cases(db: Session, test_suite_id: str, rows: list[schemas.TestCaseVersionIn]) -> list[models.TestCase]:
+    """Creates many test cases in one transaction — used by both the tabular bulk-add UI
+    and Excel upload, so both paths share identical validation/linking behavior."""
+    created = []
+    for row in rows:
+        test_case = models.TestCase(test_suite_id=test_suite_id)
+        db.add(test_case)
+        db.flush()
+
+        version = _build_version(db, test_case.id, 1, row)
+        db.flush()
+
+        test_case.current_version_id = version.id
+        _link_script_by_name(db, test_case, row.linked_script_name)
+        created.append(test_case)
+
+    db.commit()
+    for tc in created:
+        db.refresh(tc)
+    return created
+
+
+>>>>>>> spreadsheet_add_data
 def list_test_cases(db: Session, test_suite_id: str = None):
     q = db.query(models.TestCase)
     if test_suite_id:

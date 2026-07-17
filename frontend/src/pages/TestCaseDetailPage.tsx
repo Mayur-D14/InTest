@@ -65,6 +65,15 @@ export default function TestCaseDetailPage() {
               change_summary: "",
               changed_by: v.changed_by,
               steps: v.steps.map((s) => ({ step_number: s.step_number, action: s.action, expected_result: s.expected_result })),
+<<<<<<< HEAD
+=======
+              description: v.description,
+              test_scripts: v.test_scripts,
+              test_data: v.test_data,
+              expected_result: v.expected_result,
+              actual_result: v.actual_result,
+              linked_script_name: null,
+>>>>>>> spreadsheet_add_data
             }}
             onSubmit={handleUpdate}
             onCancel={() => setEditing(false)}
@@ -101,6 +110,47 @@ export default function TestCaseDetailPage() {
             </div>
           )}
 
+<<<<<<< HEAD
+=======
+          {v.description && (
+            <div className="mb-6">
+              <div className="text-xs font-mono text-muted mb-1">Description</div>
+              <p className="text-sm bg-panel border border-border rounded-lg p-3 whitespace-pre-wrap">{v.description}</p>
+            </div>
+          )}
+
+          {(v.test_scripts || v.test_data || v.expected_result || v.actual_result) && (
+            <div className="mb-6 space-y-3">
+              {v.test_scripts && (
+                <div>
+                  <div className="text-xs font-mono text-muted mb-1">Test Scripts</div>
+                  <p className="text-sm bg-panel border border-border rounded-lg p-3 whitespace-pre-wrap">{v.test_scripts}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                {v.test_data && (
+                  <div>
+                    <div className="text-xs font-mono text-muted mb-1">Test Data</div>
+                    <p className="text-sm bg-panel border border-border rounded-lg p-3 whitespace-pre-wrap">{v.test_data}</p>
+                  </div>
+                )}
+                {v.expected_result && (
+                  <div>
+                    <div className="text-xs font-mono text-muted mb-1">Expected Result</div>
+                    <p className="text-sm bg-panel border border-border rounded-lg p-3 whitespace-pre-wrap">{v.expected_result}</p>
+                  </div>
+                )}
+              </div>
+              {v.actual_result && (
+                <div>
+                  <div className="text-xs font-mono text-muted mb-1">Actual Result</div>
+                  <p className="text-sm bg-panel border border-border rounded-lg p-3 whitespace-pre-wrap">{v.actual_result}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+>>>>>>> spreadsheet_add_data
           <div className="mb-6">
             <div className="text-xs font-mono text-muted mb-2">Steps</div>
             <div className="space-y-2">

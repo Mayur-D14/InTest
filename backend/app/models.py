@@ -2,7 +2,13 @@ import enum
 import uuid
 from datetime import datetime
 
+<<<<<<< HEAD
 from sqlalchemy import (Column, String, Text, Integer, ForeignKey, DateTime, Enum, JSON, Table)
+=======
+from sqlalchemy import (
+    Column, String, Text, Integer, ForeignKey, DateTime, Enum, JSON, Table,
+)
+>>>>>>> spreadsheet_add_data
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -95,6 +101,19 @@ class TestCaseVersion(Base):
     change_summary = Column(String(500), default="Initial version")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+<<<<<<< HEAD
+=======
+    # Flat spreadsheet-style fields (added alongside preconditions/steps, not replacing them) —
+    # matches the Test Title | Description | Priority | Severity | Test Scripts | Test Data |
+    # Expected Result | Actual Result format for tabular entry and Excel import/export.
+    description = Column(Text, default="")
+    test_scripts = Column(Text, default="")     # free text; script linking still goes through
+                                                  # the AutomationScript <-> TestCase many-to-many
+    test_data = Column(Text, default="")
+    expected_result = Column(Text, default="")   # overall expected result (distinct from per-step)
+    actual_result = Column(Text, default="")     # filled in manually after execution
+
+>>>>>>> spreadsheet_add_data
     test_case = relationship("TestCase", back_populates="versions", foreign_keys=[test_case_id])
     steps = relationship("TestCaseStep", back_populates="version", cascade="all, delete-orphan", order_by="TestCaseStep.step_number")
 

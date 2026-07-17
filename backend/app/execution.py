@@ -17,9 +17,17 @@ class ExecutionError(Exception):
 
 
 def _materialize_script(script: models.AutomationScript, run_dir: Path) -> None:
+<<<<<<< HEAD
     """Writes the script's source (upload or git) into run_dir/script.py"""
     run_dir.mkdir(parents=True, exist_ok=True)
     target = run_dir / "script.py"
+=======
+    """Writes the script's source (upload or git) into run_dir/test_script.py.
+    Filename MUST match pytest's default discovery pattern (test_*.py / *_test.py)
+    or pytest silently collects 0 items — that was the bug."""
+    run_dir.mkdir(parents=True, exist_ok=True)
+    target = run_dir / "test_script.py"
+>>>>>>> spreadsheet_add_data
 
     if script.source_type == models.ScriptSourceType.UPLOAD:
         if not script.script_content:

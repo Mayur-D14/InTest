@@ -55,6 +55,28 @@ export interface TestCaseVersion {
   change_summary: string;
   created_at: string;
   steps: TestCaseStep[];
+<<<<<<< HEAD
+=======
+  description: string;
+  test_scripts: string;
+  test_data: string;
+  expected_result: string;
+  actual_result: string;
+}
+
+export type TestCaseVersionInput = Omit<TestCaseVersion, "id" | "test_case_id" | "version_number" | "created_at"> & {
+  linked_script_name?: string | null;
+};
+
+export interface ExcelUploadRowError {
+  row_number: number;
+  message: string;
+}
+
+export interface ExcelUploadResult {
+  created: number;
+  errors: ExcelUploadRowError[];
+>>>>>>> spreadsheet_add_data
 }
 
 export interface TestCase {
@@ -179,10 +201,41 @@ export const api = {
   listTestCases: (suiteId?: string) =>
     request<TestCase[]>(`/test-cases${suiteId ? `?test_suite_id=${suiteId}` : ""}`),
   getTestCase: (id: string) => request<TestCase>(`/test-cases/${id}`),
+<<<<<<< HEAD
   createTestCase: (data: { test_suite_id: string; version: Omit<TestCaseVersion, "id" | "test_case_id" | "version_number" | "created_at"> }) =>
     request<TestCase>("/test-cases", { method: "POST", body: JSON.stringify(data) }),
   updateTestCase: (id: string, data: { version: Omit<TestCaseVersion, "id" | "test_case_id" | "version_number" | "created_at"> }) =>
     request<TestCase>(`/test-cases/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+=======
+  createTestCase: (data: { test_suite_id: string; version: TestCaseVersionInput }) =>
+    request<TestCase>("/test-cases", { method: "POST", body: JSON.stringify(data) }),
+  updateTestCase: (id: string, data: { version: TestCaseVersionInput }) =>
+    request<TestCase>(`/test-cases/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  bulkCreateTestCases: (test_suite_id: string, rows: TestCaseVersionInput[]) =>
+    request<TestCase[]>("/test-cases/bulk", { method: "POST", body: JSON.stringify({ test_suite_id, rows }) }),
+  downloadExcelTemplate: async () => {
+    const res = await fetch(`${API_URL}/test-cases/excel-template`);
+    if (!res.ok) throw new Error("Failed to download template");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "test-cases-template.xlsx";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+  uploadExcelTestCases: async (testSuiteId: string, file: File): Promise<ExcelUploadResult> => {
+    const formData = new FormData();
+    formData.append("test_suite_id", testSuiteId);
+    formData.append("file", file);
+    const res = await fetch(`${API_URL}/test-cases/upload-excel`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(body.detail || "Upload failed");
+    }
+    return res.json();
+  },
+>>>>>>> spreadsheet_add_data
   getHistory: (id: string) => request<TestCaseVersion[]>(`/test-cases/${id}/history`),
   deleteTestCase: (id: string) => request(`/test-cases/${id}`, { method: "DELETE" }),
 

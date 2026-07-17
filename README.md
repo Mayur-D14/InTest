@@ -9,6 +9,20 @@ Built incrementally, module by module.
 - Projects → Test Suites → Test Cases hierarchy
 - Rich test case fields: title, preconditions, numbered steps, priority, severity, status, tags
 - Full version history (snapshot-based) — every edit creates a new version, nothing is lost
+<<<<<<< HEAD
+=======
+- **Flat spreadsheet-style fields** (added alongside the above, not replacing it): Description,
+  Test Scripts (free text), Test Data, Expected Result, Actual Result — versioned like everything else
+- **Bulk tabular add**: a spreadsheet-style table on the Test Cases page for adding many test
+  cases in one save, instead of one form submission per case
+- **Excel upload**: import test cases from an `.xlsx` file matching the format
+  `Test Title | Description | Priority | Severity | Test Scripts | Test Data | Expected Result | Actual Result`
+  (plus an optional `Linked Script` column, matched by exact script name). A **Download template**
+  button on the upload panel generates a correctly-formatted starter file. Rows missing a Test
+  Title are skipped with a per-row error rather than failing the whole upload.
+- Optionally link a test case to an existing Automation Script by name (reuses the same
+  many-to-many relationship Scripts already use — no separate/competing link mechanism)
+>>>>>>> spreadsheet_add_data
 
 ### Phase 2 — Automation Script Runner ✅
 - Upload Python/pytest/Selenium scripts directly, or point at a file in a Git repo
@@ -135,6 +149,13 @@ sdet-platform/
 
 ## Architecture notes
 
+<<<<<<< HEAD
+=======
+- **Schema changes auto-migrate on startup.** New columns (like the flat spreadsheet fields added
+  to test cases) are added to your existing Postgres database automatically via idempotent
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements run at backend startup — no manual SQL,
+  no data loss, no need to drop the `pgdata` volume when pulling in schema updates.
+>>>>>>> spreadsheet_add_data
 - **Versioning is snapshot-based**, not diff-based: every edit to a test case creates a brand-new
   `TestCaseVersion` row with a full copy of all fields + steps. `TestCase.current_version_id` always
   points at the latest one.
