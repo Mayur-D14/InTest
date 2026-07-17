@@ -32,10 +32,6 @@ app.mount("/attachments", StaticFiles(directory=ATTACHMENTS_DIR), name="attachme
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-<<<<<<< HEAD
-=======
-    _run_lightweight_migrations()
->>>>>>> spreadsheet_add_data
     if os.getenv("SEED_ON_START", "false").lower() == "true":
         db = SessionLocal()
         try:
@@ -44,35 +40,6 @@ def on_startup():
             db.close()
 
 
-<<<<<<< HEAD
-=======
-def _run_lightweight_migrations():
-    """
-    create_all() only creates missing TABLES, not missing COLUMNS on existing tables.
-    For a solo-dev local tool, a full migration framework (Alembic) is more ceremony than
-    this needs — instead, new columns are added here idempotently so existing databases
-    pick them up automatically without losing data.
-    """
-    statements = [
-        "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''",
-        "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS test_scripts TEXT DEFAULT ''",
-        "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS test_data TEXT DEFAULT ''",
-        "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS expected_result TEXT DEFAULT ''",
-        "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS actual_result TEXT DEFAULT ''",
-    ]
-    with engine.connect() as conn:
-        for stmt in statements:
-            try:
-                conn.execute(text(stmt))
-                conn.commit()
-            except Exception as e:
-                # SQLite (used in tests) doesn't support IF NOT EXISTS the same way and
-                # already gets these columns via create_all() on a fresh file, so failures
-                # here are expected/harmless in that context.
-                conn.rollback()
-
-
->>>>>>> spreadsheet_add_data
 @app.get("/health")
 def health():
     return {"status": "ok"}
