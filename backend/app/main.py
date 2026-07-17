@@ -2,10 +2,6 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-<<<<<<< HEAD
-=======
-from sqlalchemy import text
->>>>>>> spreadsheet_add_data
 
 from app.database import Base, engine, SessionLocal
 from app.routers import projects, suites, testcases, scripts, bugs, pipelines, runs

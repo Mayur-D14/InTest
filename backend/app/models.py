@@ -2,13 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-<<<<<<< HEAD
 from sqlalchemy import (Column, String, Text, Integer, ForeignKey, DateTime, Enum, JSON, Table)
-=======
-from sqlalchemy import (
-    Column, String, Text, Integer, ForeignKey, DateTime, Enum, JSON, Table,
-)
->>>>>>> spreadsheet_add_data
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 

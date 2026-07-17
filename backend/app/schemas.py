@@ -59,16 +59,6 @@ class TestCaseVersionIn(BaseModel):
     change_summary: str = "Initial version"
     changed_by: str = "solo-sdet"
     steps: List[TestCaseStepIn] = []
-<<<<<<< HEAD
-=======
-    # Flat spreadsheet-style fields (Excel/tabular import format)
-    description: str = ""
-    test_scripts: str = ""
-    test_data: str = ""
-    expected_result: str = ""
-    actual_result: str = ""
-    linked_script_name: Optional[str] = None  # optional, resolved to an AutomationScript by name
->>>>>>> spreadsheet_add_data
 
 
 class TestCaseVersionOut(BaseModel):
@@ -86,14 +76,6 @@ class TestCaseVersionOut(BaseModel):
     change_summary: str
     created_at: datetime
     steps: List[TestCaseStepOut] = []
-<<<<<<< HEAD
-=======
-    description: str = ""
-    test_scripts: str = ""
-    test_data: str = ""
-    expected_result: str = ""
-    actual_result: str = ""
->>>>>>> spreadsheet_add_data
 
 
 # ---------- Test Case ----------
@@ -115,24 +97,6 @@ class TestCaseUpdate(BaseModel):
     version: TestCaseVersionIn
 
 
-<<<<<<< HEAD
-=======
-class TestCaseBulkCreate(BaseModel):
-    test_suite_id: str
-    rows: List[TestCaseVersionIn]
-
-
-class ExcelUploadRowError(BaseModel):
-    row_number: int
-    message: str
-
-
-class ExcelUploadResult(BaseModel):
-    created: int
-    errors: List[ExcelUploadRowError] = []
-
-
->>>>>>> spreadsheet_add_data
 # ---------- Phase 2: Automation ----------
 
 class ScriptCreate(BaseModel):
