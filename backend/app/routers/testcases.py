@@ -1,16 +1,7 @@
-<<<<<<< HEAD
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from app import crud, schemas
-=======
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
-from typing import Optional
-import io
-from app import crud, schemas, excel_import
->>>>>>> spreadsheet_add_data
 from app.database import get_db
 
 router = APIRouter(prefix="/test-cases", tags=["test-cases"])
@@ -21,40 +12,6 @@ def create_test_case(data: schemas.TestCaseCreate, db: Session = Depends(get_db)
     return crud.create_test_case(db, data)
 
 
-<<<<<<< HEAD
-=======
-@router.post("/bulk", response_model=list[schemas.TestCaseOut])
-def bulk_create_test_cases(data: schemas.TestCaseBulkCreate, db: Session = Depends(get_db)):
-    if not data.rows:
-        raise HTTPException(status_code=400, detail="No rows provided")
-    return crud.bulk_create_test_cases(db, data.test_suite_id, data.rows)
-
-
-@router.get("/excel-template")
-def download_excel_template():
-    content = excel_import.build_template()
-    return StreamingResponse(
-        io.BytesIO(content),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=test-cases-template.xlsx"},
-    )
-
-
-@router.post("/upload-excel", response_model=schemas.ExcelUploadResult)
-async def upload_excel(test_suite_id: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
-    content = await file.read()
-    try:
-        rows, errors = excel_import.parse_excel(content)
-    except excel_import.ExcelParseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    if rows:
-        crud.bulk_create_test_cases(db, test_suite_id, rows)
-
-    return schemas.ExcelUploadResult(created=len(rows), errors=errors)
-
-
->>>>>>> spreadsheet_add_data
 @router.get("", response_model=list[schemas.TestCaseOut])
 def list_test_cases(test_suite_id: Optional[str] = None, db: Session = Depends(get_db)):
     return crud.list_test_cases(db, test_suite_id)
