@@ -9,7 +9,3 @@ GitPython==3.1.43
 python-multipart==0.0.12
 celery==5.4.0
 redis==5.0.8
-<<<<<<< HEAD
-=======
-openpyxl==3.1.5
->>>>>>> spreadsheet_add_data
