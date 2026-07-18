@@ -10,23 +10,41 @@ Built incrementally, module by module.
 - Rich test case fields: title, preconditions, numbered steps, priority, severity, status, tags
 - Full version history (snapshot-based) — every edit creates a new version, nothing is lost
 - **Flat spreadsheet-style fields** (added alongside the above, not replacing it): Description,
-  Test Scripts (free text), Test Data, Expected Result, Actual Result — versioned like everything else
-- **Bulk tabular add**: a spreadsheet-style table on the Test Cases page for adding many test
-  cases in one save, instead of one form submission per case
+  Test Steps (free text — renamed from "Test Scripts" to avoid confusion with the Scripts entity),
+  Test Data, Expected Result, Actual Result — versioned like everything else
+- **Table view**: the test cases inside a suite are always shown as a table (ID, Title, Description,
+  Priority, Severity, Test Steps, Test Data, Expected Result, Actual Result), not a card list.
+  Projects and Test Suites listings stay as cards — only the test case list within a suite is tabular.
+- **New Test Case** adds an inline-editable row directly to the table (add several before saving);
+  **Save N new rows** commits them all at once. There's no separate "bulk add" mode anymore — it's
+  just the table.
 - **Excel upload**: import test cases from an `.xlsx` file matching the format
-  `Test Title | Description | Priority | Severity | Test Scripts | Test Data | Expected Result | Actual Result`
+  `Test Title | Description | Priority | Severity | Test Steps | Test Data | Expected Result | Actual Result`
   (plus an optional `Linked Script` column, matched by exact script name). A **Download template**
-  button on the upload panel generates a correctly-formatted starter file. Rows missing a Test
-  Title are skipped with a per-row error rather than failing the whole upload.
+  button generates a correctly-formatted starter file, and the upload area is a proper drag-and-drop
+  dropzone rather than a bare file input. Rows missing a Test Title are skipped with a per-row error
+  rather than failing the whole upload.
 - Optionally link a test case to an existing Automation Script by name (reuses the same
   many-to-many relationship Scripts already use — no separate/competing link mechanism)
 
 ### Phase 2 — Automation Script Runner ✅
+- **Hierarchy**: Scripts now live under Project → Test Suite → Scripts, mirroring test cases —
+  no more picking test cases from across every suite when creating a script
+- **Language selection**: Pytest (Python), Playwright, JavaScript, C#, Java. Only Pytest actually
+  executes today; the others save fine for organization with a clear "not wired up yet" notice
+  instead of a confusing failure
+- **Edit existing scripts** — name, description, language, source, and linked test cases are all editable after creation
+- **Test case IDs are visible** next to every linked test case, on both the script panel and the
+  test cases table, with a one-click copy — no more hunting for the ID to paste into `@pytest.mark.test_case(...)`
+- **Reports**: every run has a **View report** (formatted text, in-browser) and **Download report (.zip)**
+  button — the zip bundles a human-readable report, the raw structured results, and any failure
+  screenshots that were captured
+- **Screenshots on failure**: if a test uses the `driver` fixture and fails, a screenshot is
+  captured automatically and shown inline next to that result
 - Upload Python/pytest/Selenium scripts directly, or point at a file in a Git repo
 - One script can link to multiple test cases via `@pytest.mark.test_case("id")`
-- Scripts execute against a real **Selenium Grid** (hub + Chrome node) running in Docker
-- Per-test-case pass/fail results, run history, and full logs viewable per run
-- Execution is synchronous for now (one run at a time) — a job queue for concurrent runs is Phase 5
+- Scripts execute against a real **Selenium Grid** running in Docker
+- Per-test-case pass/fail results, run history, full logs viewable per run
 
 ### Phase 3 — Bug Reports ✅
 - Rich fields: severity, priority, status (Open/In Progress/Resolved/Closed/Reopened), environment, assignee
@@ -146,10 +164,14 @@ sdet-platform/
 
 ## Architecture notes
 
-- **Schema changes auto-migrate on startup.** New columns (like the flat spreadsheet fields added
-  to test cases) are added to your existing Postgres database automatically via idempotent
-  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements run at backend startup — no manual SQL,
-  no data loss, no need to drop the `pgdata` volume when pulling in schema updates.
+- **Schema changes auto-migrate on startup.** New columns (flat test case fields, the script→suite
+  hierarchy, failure screenshot URLs) are added to your existing Postgres database automatically via
+  idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements run at backend startup — no manual
+  SQL, no data loss. Existing scripts also get their `language` value normalized from the old free-text
+  default to the new dropdown vocabulary automatically.
+- **"Test Title" stays a required first column** even though it wasn't explicitly re-listed in the
+  most recent format spec — every test case needs an identifying title, so this was kept as an
+  assumption rather than dropped. Flag it if that's not what you meant.
 - **Versioning is snapshot-based**, not diff-based: every edit to a test case creates a brand-new
   `TestCaseVersion` row with a full copy of all fields + steps. `TestCase.current_version_id` always
   points at the latest one.

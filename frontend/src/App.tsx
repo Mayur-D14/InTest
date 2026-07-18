@@ -3,7 +3,8 @@ import ProjectsPage from "./pages/ProjectsPage";
 import SuitesPage from "./pages/SuitesPage";
 import TestCasesPage from "./pages/TestCasesPage";
 import TestCaseDetailPage from "./pages/TestCaseDetailPage";
-import ScriptsPage from "./pages/ScriptsPage";
+import ScriptsIndexPage from "./pages/ScriptsIndexPage";
+import SuiteScriptsPage from "./pages/SuiteScriptsPage";
 import ScriptDetailPage from "./pages/ScriptDetailPage";
 import BugsPage from "./pages/BugsPage";
 import BugDetailPage from "./pages/BugDetailPage";
@@ -35,7 +36,7 @@ function Sidebar() {
         <NavLink to="/suites" className={linkClass}>Test Suites</NavLink>
 
         <div className="px-3 pt-4 pb-2 text-[10px] uppercase tracking-wider text-muted font-mono">Automation</div>
-        <NavLink to="/scripts" className={linkClass}>Scripts &amp; Runs</NavLink>
+        <NavLink to="/scripts" className={linkClass}>All Scripts</NavLink>
 
         <div className="px-3 pt-4 pb-2 text-[10px] uppercase tracking-wider text-muted font-mono">Quality</div>
         <NavLink to="/bugs" className={linkClass}>Bug Reports</NavLink>
@@ -59,8 +60,9 @@ export default function App() {
           <Route path="/" element={<ProjectsPage />} />
           <Route path="/suites" element={<SuitesPage />} />
           <Route path="/suites/:suiteId/test-cases" element={<TestCasesPage />} />
+          <Route path="/suites/:suiteId/scripts" element={<SuiteScriptsPage />} />
           <Route path="/test-cases/:testCaseId" element={<TestCaseDetailPage />} />
-          <Route path="/scripts" element={<ScriptsPage />} />
+          <Route path="/scripts" element={<ScriptsIndexPage />} />
           <Route path="/scripts/:scriptId" element={<ScriptDetailPage />} />
           <Route path="/bugs" element={<BugsPage />} />
           <Route path="/bugs/:bugId" element={<BugDetailPage />} />

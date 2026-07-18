@@ -7,7 +7,7 @@ from app import models, schemas
 # "Linked Script" is optional and not part of the required format.
 REQUIRED_COLUMNS = [
     "Test Title", "Description", "Priority", "Severity",
-    "Test Scripts", "Test Data", "Expected Result", "Actual Result",
+    "Test Steps", "Test Data", "Expected Result", "Actual Result",
 ]
 OPTIONAL_COLUMNS = ["Linked Script"]
 
@@ -78,7 +78,7 @@ def parse_excel(file_bytes: bytes) -> tuple[list[schemas.TestCaseVersionIn], lis
             description=cell(row, "Description"),
             priority=priority,
             severity=severity,
-            test_scripts=cell(row, "Test Scripts"),
+            test_scripts=cell(row, "Test Steps"),
             test_data=cell(row, "Test Data"),
             expected_result=cell(row, "Expected Result"),
             actual_result=cell(row, "Actual Result"),

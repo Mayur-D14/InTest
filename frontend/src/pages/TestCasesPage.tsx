@@ -1,22 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ExcelUploadResult, TestCase, TestCaseVersionInput, TestSuite } from "../lib/api";
+import { api, ExcelUploadResult, Priority, Severity, TestCase, TestCaseVersionInput, TestSuite } from "../lib/api";
 import { PriorityBadge, SeverityBadge, StatusBadge } from "../components/Badges";
-import TestCaseForm, { TestCaseFormValue } from "../components/TestCaseForm";
-import BulkAddTable from "../components/BulkAddTable";
+import FileDropzone from "../components/FileDropzone";
 
-type Mode = "none" | "single" | "bulk" | "excel";
+function emptyRow(): TestCaseVersionInput {
+  return {
+    title: "", preconditions: "", priority: "Medium", severity: "Major", status: "Draft",
+    tags: [], change_summary: "Added via table", changed_by: "solo-sdet", steps: [],
+    description: "", test_scripts: "", test_data: "", expected_result: "", actual_result: "",
+    linked_script_name: null,
+  };
+}
 
 export default function TestCasesPage() {
   const { suiteId } = useParams<{ suiteId: string }>();
   const [suite, setSuite] = useState<TestSuite | null>(null);
   const [cases, setCases] = useState<TestCase[]>([]);
+  const [newRows, setNewRows] = useState<TestCaseVersionInput[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<Mode>("none");
+  const [savingRows, setSavingRows] = useState(false);
+  const [showExcel, setShowExcel] = useState(false);
   const [excelUploading, setExcelUploading] = useState(false);
   const [excelResult, setExcelResult] = useState<ExcelUploadResult | null>(null);
   const [excelError, setExcelError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
     if (!suiteId) return;
@@ -31,18 +38,23 @@ export default function TestCasesPage() {
 
   useEffect(load, [suiteId]);
 
-  const handleCreate = async (value: TestCaseFormValue) => {
-    if (!suiteId) return;
-    await api.createTestCase({ test_suite_id: suiteId, version: value });
-    setMode("none");
-    load();
-  };
+  const addBlankRow = () => setNewRows((prev) => [...prev, emptyRow()]);
+  const discardRow = (idx: number) => setNewRows((prev) => prev.filter((_, i) => i !== idx));
+  const updateNewRow = (idx: number, field: keyof TestCaseVersionInput, value: string) =>
+    setNewRows((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
 
-  const handleBulkSave = async (rows: TestCaseVersionInput[]) => {
+  const handleSaveNewRows = async () => {
     if (!suiteId) return;
-    await api.bulkCreateTestCases(suiteId, rows);
-    setMode("none");
-    load();
+    const validRows = newRows.filter((r) => r.title.trim());
+    if (validRows.length === 0) return;
+    setSavingRows(true);
+    try {
+      await api.bulkCreateTestCases(suiteId, validRows);
+      setNewRows([]);
+      load();
+    } finally {
+      setSavingRows(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -51,9 +63,8 @@ export default function TestCasesPage() {
     load();
   };
 
-  const handleExcelFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!suiteId || !e.target.files?.length) return;
-    const file = e.target.files[0];
+  const handleExcelFile = async (file: File) => {
+    if (!suiteId) return;
     setExcelUploading(true);
     setExcelResult(null);
     setExcelError(null);
@@ -65,49 +76,44 @@ export default function TestCasesPage() {
       setExcelError(err.message);
     } finally {
       setExcelUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const modeButtonClass = (m: Mode) =>
-    `px-3 py-2 rounded-md text-sm font-medium transition-colors border ${
-      mode === m ? "bg-accent/15 border-accent text-accent" : "bg-panel2 border-border text-muted hover:text-text"
-    }`;
+  const cellInput = "w-full bg-transparent text-sm px-2 py-1.5 outline-none focus:bg-panel2 rounded";
+  const cellSelect = "w-full bg-transparent text-sm px-1 py-1.5 outline-none focus:bg-panel2 rounded";
+  const thClass = "text-left text-[11px] font-mono text-muted px-3 py-2 whitespace-nowrap";
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-8">
-      <div className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <Link to="/suites" className="text-xs font-mono text-muted hover:text-accent">&larr; all suites</Link>
-          <h1 className="text-xl font-semibold mt-1">{suite?.name || "Test Cases"}</h1>
-          {suite?.description && <p className="text-sm text-muted mt-1">{suite.description}</p>}
-        </div>
-        <div className="flex gap-2 shrink-0 flex-wrap justify-end">
-          <button onClick={() => setMode(mode === "single" ? "none" : "single")} className={modeButtonClass("single")}>
-            + New Test Case
-          </button>
-          <button onClick={() => setMode(mode === "bulk" ? "none" : "bulk")} className={modeButtonClass("bulk")}>
-            ⊞ Bulk Add
-          </button>
-          <button onClick={() => setMode(mode === "excel" ? "none" : "excel")} className={modeButtonClass("excel")}>
-            ⇪ Upload Excel
-          </button>
+    <div className="max-w-7xl mx-auto px-8 py-8">
+      <div className="mb-4">
+        <Link to="/suites" className="text-xs font-mono text-muted hover:text-accent">&larr; all suites</Link>
+        <div className="flex items-start justify-between mt-1 gap-4">
+          <div>
+            <h1 className="text-xl font-semibold">{suite?.name || "Test Cases"}</h1>
+            {suite?.description && <p className="text-sm text-muted mt-1">{suite.description}</p>}
+          </div>
+          <div className="flex gap-2 shrink-0 flex-wrap justify-end items-start">
+            {suiteId && (
+              <Link to={`/suites/${suiteId}/scripts`} className="px-3 py-2 rounded-md bg-panel2 border border-border text-sm font-medium text-muted hover:text-text transition-colors">
+                ⚙ Scripts
+              </Link>
+            )}
+            <button onClick={addBlankRow} className="px-3 py-2 rounded-md bg-accent hover:bg-accentDim text-white text-sm font-medium transition-colors">
+              + New Test Case
+            </button>
+            <button
+              onClick={() => setShowExcel((s) => !s)}
+              className={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+                showExcel ? "bg-accent/15 border-accent text-accent" : "bg-panel2 border-border text-muted hover:text-text"
+              }`}
+            >
+              ⇪ Upload Excel
+            </button>
+          </div>
         </div>
       </div>
 
-      {mode === "single" && (
-        <div className="mb-6">
-          <TestCaseForm submitLabel="Create test case" onSubmit={handleCreate} onCancel={() => setMode("none")} />
-        </div>
-      )}
-
-      {mode === "bulk" && (
-        <div className="mb-6">
-          <BulkAddTable onSave={handleBulkSave} onCancel={() => setMode("none")} />
-        </div>
-      )}
-
-      {mode === "excel" && (
+      {showExcel && (
         <div className="mb-6 bg-panel border border-border rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-medium">Upload test cases from Excel</div>
@@ -116,10 +122,10 @@ export default function TestCasesPage() {
             </button>
           </div>
           <p className="text-sm text-muted mb-3">
-            Expected columns: <span className="font-mono text-[11px]">Test Title | Description | Priority | Severity | Test Scripts | Test Data | Expected Result | Actual Result</span>.
+            Expected columns: <span className="font-mono text-[11px]">Test Title | Description | Priority | Severity | Test Steps | Test Data | Expected Result | Actual Result</span>.
             An optional <span className="font-mono text-[11px]">Linked Script</span> column matches an existing automation script by exact name.
           </p>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleExcelFileSelect} disabled={excelUploading} className="text-sm" />
+          <FileDropzone accept=".xlsx,.xls" hint=".xlsx or .xls, matching the column format above" disabled={excelUploading} onFileSelect={handleExcelFile} />
           {excelUploading && <div className="text-sm text-muted mt-2">Uploading and parsing...</div>}
           {excelError && <div className="text-sm text-fail bg-fail/10 border border-fail/30 rounded-md p-2 mt-3">{excelError}</div>}
           {excelResult && (
@@ -143,52 +149,105 @@ export default function TestCasesPage() {
 
       {loading ? (
         <div className="text-muted text-sm">Loading...</div>
-      ) : cases.length === 0 ? (
+      ) : cases.length === 0 && newRows.length === 0 ? (
         <div className="border border-dashed border-border rounded-lg p-10 text-center">
-          <p className="text-muted text-sm">No test cases yet in this suite.</p>
+          <p className="text-muted text-sm">No test cases yet. Click "+ New Test Case" to add one, or upload an Excel file.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {cases.map((tc) => (
-            <Link
-              key={tc.id}
-              to={`/test-cases/${tc.id}`}
-              className="block bg-panel border border-border rounded-lg px-4 py-3 hover:border-accent/50 transition-colors group"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="font-medium group-hover:text-accent transition-colors truncate">
-                    {tc.current_version?.title}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {tc.current_version && (
-                      <>
-                        <PriorityBadge value={tc.current_version.priority} />
-                        <SeverityBadge value={tc.current_version.severity} />
-                        <StatusBadge value={tc.current_version.status} />
-                        {tc.current_version.tags.map((t) => (
-                          <span key={t} className="text-[11px] font-mono text-muted">#{t}</span>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-[11px] text-muted font-mono">v{tc.current_version?.version_number}</div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDelete(tc.id);
-                    }}
-                    className="text-muted hover:text-fail text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity mt-1"
-                  >
-                    delete
-                  </button>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="overflow-x-auto border border-border rounded-lg bg-panel">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-panel2 border-b border-border">
+                  <th className={thClass}>ID</th>
+                  <th className={thClass}>Test Title</th>
+                  <th className={thClass}>Description</th>
+                  <th className={thClass}>Priority</th>
+                  <th className={thClass}>Severity</th>
+                  <th className={thClass}>Test Steps</th>
+                  <th className={thClass}>Test Data</th>
+                  <th className={thClass}>Expected Result</th>
+                  <th className={thClass}>Actual Result</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {cases.map((tc) => {
+                  const v = tc.current_version;
+                  return (
+                    <tr key={tc.id} className="border-b border-border last:border-0 hover:bg-panel2/50 align-top">
+                      <td className="px-3 py-2">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(tc.id)}
+                          title="Copy full ID"
+                          className="text-[10px] font-mono text-muted hover:text-accent"
+                        >
+                          {tc.id.slice(0, 8)}…
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 min-w-[160px]">
+                        <Link to={`/test-cases/${tc.id}`} className="text-sm font-medium hover:text-accent">{v?.title}</Link>
+                        {v && (
+                          <div className="mt-1"><StatusBadge value={v.status} /></div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-sm text-muted min-w-[140px] max-w-[220px]">{v?.description}</td>
+                      <td className="px-3 py-2">{v && <PriorityBadge value={v.priority} />}</td>
+                      <td className="px-3 py-2">{v && <SeverityBadge value={v.severity} />}</td>
+                      <td className="px-3 py-2 text-sm text-muted min-w-[160px] max-w-[240px] whitespace-pre-wrap">{v?.test_scripts}</td>
+                      <td className="px-3 py-2 text-sm text-muted min-w-[120px] max-w-[180px]">{v?.test_data}</td>
+                      <td className="px-3 py-2 text-sm text-muted min-w-[140px] max-w-[220px]">{v?.expected_result}</td>
+                      <td className="px-3 py-2 text-sm text-muted min-w-[120px] max-w-[180px]">{v?.actual_result}</td>
+                      <td className="px-3 py-2">
+                        <button onClick={() => handleDelete(tc.id)} className="text-muted hover:text-fail text-xs">×</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {newRows.map((row, idx) => (
+                  <tr key={`new-${idx}`} className="border-b border-border last:border-0 bg-accent/5">
+                    <td className="px-3 py-2 text-[10px] font-mono text-muted">new</td>
+                    <td className="px-2 py-1"><input value={row.title} onChange={(e) => updateNewRow(idx, "title", e.target.value)} className={cellInput} placeholder="Required" /></td>
+                    <td className="px-2 py-1"><input value={row.description} onChange={(e) => updateNewRow(idx, "description", e.target.value)} className={cellInput} /></td>
+                    <td className="px-2 py-1">
+                      <select value={row.priority} onChange={(e) => updateNewRow(idx, "priority", e.target.value as Priority)} className={cellSelect}>
+                        {["Low", "Medium", "High", "Critical"].map((v) => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-2 py-1">
+                      <select value={row.severity} onChange={(e) => updateNewRow(idx, "severity", e.target.value as Severity)} className={cellSelect}>
+                        {["Minor", "Major", "Critical", "Blocker"].map((v) => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-2 py-1"><input value={row.test_scripts} onChange={(e) => updateNewRow(idx, "test_scripts", e.target.value)} className={cellInput} /></td>
+                    <td className="px-2 py-1"><input value={row.test_data} onChange={(e) => updateNewRow(idx, "test_data", e.target.value)} className={cellInput} /></td>
+                    <td className="px-2 py-1"><input value={row.expected_result} onChange={(e) => updateNewRow(idx, "expected_result", e.target.value)} className={cellInput} /></td>
+                    <td className="px-2 py-1"><input value={row.actual_result} onChange={(e) => updateNewRow(idx, "actual_result", e.target.value)} className={cellInput} /></td>
+                    <td className="px-3 py-2">
+                      <button onClick={() => discardRow(idx)} className="text-muted hover:text-fail text-xs">×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {newRows.length > 0 && (
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleSaveNewRows}
+                disabled={savingRows}
+                className="px-4 py-2 rounded-md bg-accent hover:bg-accentDim disabled:opacity-50 text-white text-sm font-medium"
+              >
+                {savingRows ? "Saving..." : `Save ${newRows.filter((r) => r.title.trim()).length || ""} new row${newRows.filter((r) => r.title.trim()).length === 1 ? "" : "s"}`}
+              </button>
+              <button onClick={() => setNewRows([])} className="px-4 py-2 rounded-md bg-panel2 border border-border text-sm font-medium text-muted hover:text-text">
+                Discard all
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

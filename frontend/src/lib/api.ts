@@ -85,8 +85,20 @@ export interface TestCase {
 }
 
 export type ScriptSourceType = "upload" | "git";
+export type ScriptLanguage = "pytest-python" | "playwright" | "javascript" | "csharp" | "java";
 export type RunStatus = "queued" | "running" | "passed" | "failed" | "error";
 export type TestOutcome = "passed" | "failed" | "skipped";
+
+export const SCRIPT_LANGUAGE_LABELS: Record<ScriptLanguage, string> = {
+  "pytest-python": "Pytest (Python)",
+  playwright: "Playwright",
+  javascript: "JavaScript",
+  csharp: "C#",
+  java: "Java",
+};
+
+// Only Pytest actually executes today — others save for reference/organization.
+export const EXECUTABLE_LANGUAGES: ScriptLanguage[] = ["pytest-python"];
 
 export interface LinkedTestCase {
   id: string;
@@ -95,9 +107,10 @@ export interface LinkedTestCase {
 
 export interface AutomationScript {
   id: string;
+  test_suite_id: string | null;
   name: string;
   description: string;
-  language: string;
+  language: ScriptLanguage;
   source_type: ScriptSourceType;
   script_content: string | null;
   git_repo_url: string | null;
@@ -113,6 +126,7 @@ export interface ExecutionResultItem {
   test_case_id: string;
   outcome: TestOutcome;
   detail: string;
+  screenshot_url: string | null;
 }
 
 export interface ExecutionRun {
@@ -230,11 +244,14 @@ export const api = {
   deleteTestCase: (id: string) => request(`/test-cases/${id}`, { method: "DELETE" }),
 
   // Automation Scripts
-  listScripts: () => request<AutomationScript[]>("/scripts"),
+  listScripts: (testSuiteId?: string) =>
+    request<AutomationScript[]>(`/scripts${testSuiteId ? `?test_suite_id=${testSuiteId}` : ""}`),
   getScript: (id: string) => request<AutomationScript>(`/scripts/${id}`),
   createScript: (data: {
+    test_suite_id: string;
     name: string;
     description: string;
+    language: ScriptLanguage;
     source_type: ScriptSourceType;
     script_content?: string;
     git_repo_url?: string;
@@ -242,6 +259,16 @@ export const api = {
     git_path?: string;
     test_case_ids: string[];
   }) => request<AutomationScript>("/scripts", { method: "POST", body: JSON.stringify(data) }),
+  updateScript: (id: string, data: {
+    name: string;
+    description: string;
+    language: ScriptLanguage;
+    source_type: ScriptSourceType;
+    script_content?: string;
+    git_repo_url?: string;
+    git_branch?: string;
+    git_path?: string;
+  }) => request<AutomationScript>(`/scripts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   linkTestCases: (scriptId: string, testCaseIds: string[]) =>
     request(`/scripts/${scriptId}/link-test-cases`, { method: "PUT", body: JSON.stringify({ test_case_ids: testCaseIds }) }),
   deleteScript: (id: string) => request(`/scripts/${id}`, { method: "DELETE" }),
@@ -249,6 +276,18 @@ export const api = {
   runAllScripts: () => request<ExecutionRun[]>("/scripts/run-all", { method: "POST" }),
   getRun: (runId: string) => request<ExecutionRun>(`/runs/${runId}`),
   listRuns: (scriptId: string) => request<ExecutionRun[]>(`/scripts/${scriptId}/runs`),
+  getRunReport: (runId: string) => fetch(`${API_URL}/runs/${runId}/report`).then((r) => r.text()),
+  downloadRunReportZip: async (runId: string) => {
+    const res = await fetch(`${API_URL}/runs/${runId}/download`);
+    if (!res.ok) throw new Error("Failed to download report");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `run-${runId.slice(0, 8)}-report.zip`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
 
   // Bugs
   listBugs: (status?: string, severity?: string) => {

@@ -118,7 +118,7 @@ export default function TestCaseDetailPage() {
             <div className="mb-6 space-y-3">
               {v.test_scripts && (
                 <div>
-                  <div className="text-xs font-mono text-muted mb-1">Test Scripts</div>
+                  <div className="text-xs font-mono text-muted mb-1">Test Steps</div>
                   <p className="text-sm bg-panel border border-border rounded-lg p-3 whitespace-pre-wrap">{v.test_scripts}</p>
                 </div>
               )}

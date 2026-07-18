@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import Optional
 from app import crud, schemas, models, execution
 from app.database import get_db
 from app.tasks import execute_script_run_task
@@ -24,8 +25,8 @@ def create_script(data: schemas.ScriptCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[schemas.ScriptOut])
-def list_scripts(db: Session = Depends(get_db)):
-    return crud.list_scripts(db)
+def list_scripts(test_suite_id: Optional[str] = None, db: Session = Depends(get_db)):
+    return crud.list_scripts(db, test_suite_id)
 
 
 @router.get("/{script_id}")
@@ -36,6 +37,18 @@ def get_script(script_id: str, db: Session = Depends(get_db)):
     out = schemas.ScriptOut.model_validate(script).model_dump()
     out["test_cases"] = _script_test_cases_out(script)
     return out
+
+
+@router.put("/{script_id}", response_model=schemas.ScriptOut)
+def update_script(script_id: str, data: schemas.ScriptUpdate, db: Session = Depends(get_db)):
+    if data.source_type == models.ScriptSourceType.UPLOAD and not data.script_content:
+        raise HTTPException(status_code=400, detail="script_content is required for upload source_type")
+    if data.source_type == models.ScriptSourceType.GIT and not (data.git_repo_url and data.git_path):
+        raise HTTPException(status_code=400, detail="git_repo_url and git_path are required for git source_type")
+    script = crud.update_script(db, script_id, data)
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    return script
 
 
 @router.put("/{script_id}/link-test-cases")

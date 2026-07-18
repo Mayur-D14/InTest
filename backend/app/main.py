@@ -29,6 +29,13 @@ ATTACHMENTS_DIR = os.getenv("ATTACHMENTS_DIR", "/data/attachments")
 os.makedirs(ATTACHMENTS_DIR, exist_ok=True)
 app.mount("/attachments", StaticFiles(directory=ATTACHMENTS_DIR), name="attachments")
 
+# Serves failure screenshots captured during test runs, e.g.
+# /run-artifacts/{run_id}/screenshots/{test_case_id}.png
+SCRIPTS_DIR = os.getenv("SCRIPTS_DIR", "/data/scripts")
+RUNS_DIR = os.path.join(SCRIPTS_DIR, "runs")
+os.makedirs(RUNS_DIR, exist_ok=True)
+app.mount("/run-artifacts", StaticFiles(directory=RUNS_DIR), name="run-artifacts")
+
 
 @app.on_event("startup")
 def on_startup():
@@ -55,6 +62,11 @@ def _run_lightweight_migrations():
         "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS test_data TEXT DEFAULT ''",
         "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS expected_result TEXT DEFAULT ''",
         "ALTER TABLE test_case_versions ADD COLUMN IF NOT EXISTS actual_result TEXT DEFAULT ''",
+        "ALTER TABLE automation_scripts ADD COLUMN IF NOT EXISTS test_suite_id UUID REFERENCES test_suites(id) ON DELETE CASCADE",
+        "ALTER TABLE execution_results ADD COLUMN IF NOT EXISTS screenshot_url VARCHAR(500)",
+        # Legacy scripts predate the language dropdown and used a free-text default —
+        # normalize them to the new vocabulary so the Pydantic enum doesn't reject them.
+        "UPDATE automation_scripts SET language = 'pytest-python' WHERE language = 'python-selenium'",
     ]
     with engine.connect() as conn:
         for stmt in statements:

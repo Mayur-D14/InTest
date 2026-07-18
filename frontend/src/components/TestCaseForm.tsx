@@ -189,7 +189,7 @@ export default function TestCaseForm({
 
         <div className="space-y-3">
           <div>
-            <label className={labelClass}>Test Scripts</label>
+            <label className={labelClass}>Test Steps</label>
             <textarea value={value.test_scripts} onChange={(e) => set("test_scripts", e.target.value)} rows={3} className={inputClass} placeholder="Free text steps, e.g. 1. Go to login  2. Enter creds  3. Click Sign In" />
           </div>
           <div>
