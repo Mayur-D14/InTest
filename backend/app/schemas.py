@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
-from app.models import Priority, Severity, TestCaseStatus, ScriptSourceType, RunStatus, TestOutcome, BugStatus
+from app.models import Priority, Severity, TestCaseStatus, ScriptSourceType, RunStatus, TestOutcome, BugStatus, ScriptLanguage
 
 
 # ---------- Project ----------
@@ -100,15 +100,27 @@ class TestCaseUpdate(BaseModel):
 # ---------- Phase 2: Automation ----------
 
 class ScriptCreate(BaseModel):
+    test_suite_id: str
     name: str
     description: str = ""
-    language: str = "python-selenium"
+    language: ScriptLanguage = ScriptLanguage.PYTEST_PYTHON
     source_type: ScriptSourceType
     script_content: Optional[str] = None       # required if source_type == upload
     git_repo_url: Optional[str] = None         # required if source_type == git
     git_branch: Optional[str] = "main"
     git_path: Optional[str] = None
     test_case_ids: List[str] = []              # link at creation time (optional)
+
+
+class ScriptUpdate(BaseModel):
+    name: str
+    description: str = ""
+    language: ScriptLanguage = ScriptLanguage.PYTEST_PYTHON
+    source_type: ScriptSourceType
+    script_content: Optional[str] = None
+    git_repo_url: Optional[str] = None
+    git_branch: Optional[str] = "main"
+    git_path: Optional[str] = None
 
 
 class ScriptTestCaseLinkIn(BaseModel):
@@ -124,6 +136,7 @@ class LinkedTestCaseOut(BaseModel):
 class ScriptOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    test_suite_id: Optional[str] = None
     name: str
     description: str
     language: str
@@ -142,6 +155,7 @@ class ExecutionResultOut(BaseModel):
     test_case_id: str
     outcome: TestOutcome
     detail: str
+    screenshot_url: Optional[str] = None
 
 
 class ExecutionRunOut(BaseModel):

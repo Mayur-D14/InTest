@@ -70,6 +70,7 @@ services:
       SEED_ON_START: "true"
       RUNNER_URL: http://runner:9000
       ATTACHMENTS_DIR: /data/attachments
+      SCRIPTS_DIR: /data/scripts
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       REDIS_URL: redis://redis:6379/0
     ports:
@@ -97,6 +98,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://sdet:sdet_local_pw@postgres:5432/sdet_platform
       RUNNER_URL: http://runner:9000
       ATTACHMENTS_DIR: /data/attachments
+      SCRIPTS_DIR: /data/scripts
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:

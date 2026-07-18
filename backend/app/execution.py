@@ -70,6 +70,16 @@ def execute_run(db: Session, run_id: str) -> models.ExecutionRun:
     run.status = models.RunStatus.RUNNING
     db.commit()
 
+    if script.language != models.ScriptLanguage.PYTEST_PYTHON.value:
+        return crud.finalize_run(
+            db, run.id, models.RunStatus.ERROR, raw_logs="", results={},
+            error_message=(
+                f"Execution isn't supported yet for '{script.language}' scripts — only "
+                f"Pytest (Python) runs today. This script is saved for reference; language "
+                f"support for the others is on the roadmap."
+            ),
+        )
+
     run_dir = SCRIPTS_ROOT / "runs" / run.id
 
     try:
@@ -98,7 +108,10 @@ def execute_run(db: Session, run_id: str) -> models.ExecutionRun:
     results = {}
     for tc_id, info in payload["results"].items():
         if tc_id in linked_ids:
-            results[tc_id] = {"outcome": info["outcome"], "detail": info.get("detail", "")}
+            screenshot_url = None
+            if info.get("screenshot"):
+                screenshot_url = f"/run-artifacts/{run.id}/screenshots/{info['screenshot']}"
+            results[tc_id] = {"outcome": info["outcome"], "detail": info.get("detail", ""), "screenshot_url": screenshot_url}
 
     overall = models.RunStatus.PASSED
     if any(r["outcome"] == "failed" for r in results.values()):

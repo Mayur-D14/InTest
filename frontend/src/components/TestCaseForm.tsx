@@ -167,6 +167,38 @@ export default function TestCaseForm({
         </div>
       </div>
 
+<<<<<<< HEAD
+=======
+      <div className="border-t border-border pt-4">
+        <div className="text-xs font-mono text-muted mb-3">Spreadsheet-style fields (matches Excel import format)</div>
+
+        <div className="space-y-3">
+          <div>
+            <label className={labelClass}>Test Steps</label>
+            <textarea value={value.test_scripts} onChange={(e) => set("test_scripts", e.target.value)} rows={3} className={inputClass} placeholder="Free text steps, e.g. 1. Go to login  2. Enter creds  3. Click Sign In" />
+          </div>
+          <div>
+            <label className={labelClass}>Link an automation script (optional)</label>
+            <input value={value.linked_script_name || ""} onChange={(e) => set("linked_script_name", e.target.value || null)} className={inputClass} placeholder="Exact script name — leave blank if none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Test Data</label>
+              <textarea value={value.test_data} onChange={(e) => set("test_data", e.target.value)} rows={2} className={inputClass} placeholder="Inputs used for this test" />
+            </div>
+            <div>
+              <label className={labelClass}>Expected Result</label>
+              <textarea value={value.expected_result} onChange={(e) => set("expected_result", e.target.value)} rows={2} className={inputClass} placeholder="Overall expected outcome" />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Actual Result</label>
+            <textarea value={value.actual_result} onChange={(e) => set("actual_result", e.target.value)} rows={2} className={inputClass} placeholder="Filled in after execution" />
+          </div>
+        </div>
+      </div>
+
+>>>>>>> feature/integrated_test_scripts
       <div>
         <label className={labelClass}>Change summary (for version history)</label>
         <input value={value.change_summary} onChange={(e) => set("change_summary", e.target.value)} className={inputClass} placeholder="What changed and why?" />

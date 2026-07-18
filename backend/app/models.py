@@ -95,6 +95,19 @@ class TestCaseVersion(Base):
     change_summary = Column(String(500), default="Initial version")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+<<<<<<< HEAD
+=======
+    # Flat spreadsheet-style fields (added alongside preconditions/steps, not replacing them) —
+    # matches the Test Title | Description | Priority | Severity | Test Steps | Test Data |
+    # Expected Result | Actual Result format for tabular entry and Excel import/export.
+    description = Column(Text, default="")
+    test_scripts = Column(Text, default="")     # free text; script linking still goes through
+                                                  # the AutomationScript <-> TestCase many-to-many
+    test_data = Column(Text, default="")
+    expected_result = Column(Text, default="")   # overall expected result (distinct from per-step)
+    actual_result = Column(Text, default="")     # filled in manually after execution
+
+>>>>>>> feature/integrated_test_scripts
     test_case = relationship("TestCase", back_populates="versions", foreign_keys=[test_case_id])
     steps = relationship("TestCaseStep", back_populates="version", cascade="all, delete-orphan", order_by="TestCaseStep.step_number")
 
@@ -132,6 +145,14 @@ class TestOutcome(str, enum.Enum):
     SKIPPED = "skipped"
 
 
+class ScriptLanguage(str, enum.Enum):
+    PYTEST_PYTHON = "pytest-python"   # only one with real execution support today
+    PLAYWRIGHT = "playwright"
+    JAVASCRIPT = "javascript"
+    CSHARP = "csharp"
+    JAVA = "java"
+
+
 script_test_case_links = Table(
     "script_test_case_links",
     Base.metadata,
@@ -144,9 +165,10 @@ class AutomationScript(Base):
     __tablename__ = "automation_scripts"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    test_suite_id = Column(UUID(as_uuid=False), ForeignKey("test_suites.id", ondelete="CASCADE"), nullable=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, default="")
-    language = Column(String(50), default="python-selenium")
+    language = Column(String(50), default=ScriptLanguage.PYTEST_PYTHON.value, nullable=False)
     source_type = Column(Enum(ScriptSourceType), nullable=False)
 
     # populated when source_type == upload
@@ -160,6 +182,7 @@ class AutomationScript(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    suite = relationship("TestSuite")
     test_cases = relationship("TestCase", secondary=script_test_case_links, backref="scripts")
     runs = relationship("ExecutionRun", back_populates="script", cascade="all, delete-orphan")
 
@@ -211,6 +234,7 @@ class ExecutionResult(Base):
     test_case_id = Column(UUID(as_uuid=False), ForeignKey("test_cases.id", ondelete="CASCADE"), nullable=False)
     outcome = Column(Enum(TestOutcome), nullable=False)
     detail = Column(Text, default="")
+    screenshot_url = Column(String(500), nullable=True)  # set when a failure screenshot was captured
 
     run = relationship("ExecutionRun", back_populates="results")
     test_case = relationship("TestCase")

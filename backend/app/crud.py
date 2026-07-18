@@ -147,6 +147,7 @@ def delete_test_case(db: Session, test_case_id: str):
 
 def create_script(db: Session, data: schemas.ScriptCreate) -> models.AutomationScript:
     script = models.AutomationScript(
+        test_suite_id=data.test_suite_id,
         name=data.name,
         description=data.description,
         language=data.language,
@@ -166,12 +167,32 @@ def create_script(db: Session, data: schemas.ScriptCreate) -> models.AutomationS
     return script
 
 
-def list_scripts(db: Session):
-    return db.query(models.AutomationScript).order_by(models.AutomationScript.created_at.desc()).all()
+def list_scripts(db: Session, test_suite_id: str = None):
+    q = db.query(models.AutomationScript)
+    if test_suite_id:
+        q = q.filter(models.AutomationScript.test_suite_id == test_suite_id)
+    return q.order_by(models.AutomationScript.created_at.desc()).all()
 
 
 def get_script(db: Session, script_id: str):
     return db.query(models.AutomationScript).filter(models.AutomationScript.id == script_id).first()
+
+
+def update_script(db: Session, script_id: str, data: schemas.ScriptUpdate):
+    script = get_script(db, script_id)
+    if not script:
+        return None
+    script.name = data.name
+    script.description = data.description
+    script.language = data.language
+    script.source_type = data.source_type
+    script.script_content = data.script_content
+    script.git_repo_url = data.git_repo_url
+    script.git_branch = data.git_branch
+    script.git_path = data.git_path
+    db.commit()
+    db.refresh(script)
+    return script
 
 
 def link_test_cases(db: Session, script_id: str, test_case_ids: list[str]):
@@ -235,6 +256,7 @@ def finalize_run(db: Session, run_id: str, status: models.RunStatus, raw_logs: s
             test_case_id=test_case_id,
             outcome=info["outcome"],
             detail=info.get("detail", ""),
+            screenshot_url=info.get("screenshot_url"),
         ))
     db.commit()
     db.refresh(run)
